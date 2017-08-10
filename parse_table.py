@@ -1,5 +1,6 @@
 #coding=utf-8
 import re
+
 class parse_table(object):
     #解析出表名，作为依赖任务名称
     def extract_table_name(self,script):
@@ -13,18 +14,30 @@ class parse_table(object):
         output_table_set.discard("")
         #找出输出表输入表中的交集
         ret_list=list((input_table_set.union(output_table_set))^(input_table_set^output_table_set))
-       #去除输入表中和输出表值一样的表,注：因为一个sql脚本定义任务只能是一个
-        input_table_set.discard(ret_list[0])
+       #去除输入表中和输出表值一样的表
+        for i in range(len(ret_list)):
+            input_table_set.discard(ret_list[i])
         #将set转成list
         input_table=list(input_table_set)
         output_table=list(output_table_set)
         return input_table,output_table
 
     #创建任务字典
-    def create_task_dict(self,input_table,output_table,file_name):#传入两个任务list
+    def create_task_dict(self,input_table,output_table,taskname):#传入任务list
         input=input_table
-        output=output_table
-        for i in output
+        #判断输出表是否只有一个
+        if len(output_table)>1:
+            output=list(taskname)
+        else:
+            output=output_table
+        for i in range(len(input)-1):
+            output.append(output[0])
+        table_dict=zip(output,input)
+        return table_dict
+
+
+
+
 
 
 
@@ -51,5 +64,5 @@ select "${dt}",a.split_item_name,a.cnt,a.recommend_tag from
  from st_wish_recommend_tag_pref_total_fatdt0 where pt=${pt}
 ) a where  a.sort<=100 and length(a.split_item_name)>1 and length(a.split_item_name)<100;"""
 s=a.extract_table_name(b)
-c=s[0]
-print c,"\n",s[1]
+d=a.create_task_dict(s[0],s[1],"a")
+
