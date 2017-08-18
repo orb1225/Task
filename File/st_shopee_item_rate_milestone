@@ -1,0 +1,30 @@
+alter table st_shopee_item_rate_milestone drop partition(pt=${pt});
+insert overwrite table st_shopee_item_rate_milestone partition(pt=${pt})
+select  "${dt}"as insert_date,a.shopid,a.itemid,if(b.rate_count>0 and a.rate_count=0,1,0) ,b.rate_count,
+if((b.four_star_count>0 or b.five_star_count>0)and (a.four_star_count=0 and a.five_star_count=0),1,0) good_rate_flag,
+if((b.one_star_count>0 or b.two_star_count>0) and (a.one_star_count=0 and a.two_star_count=0),1,0) bad_rate_flag,
+b.four_star_count,b.five_star_count,b.one_star_count,b.two_star_count
+from
+(select itemid,shopid,cast(split(rate_count,":")[0] as int) as rate_count,
+cast(split(rate_count,":")[1] as int) one_star_count,
+cast(split(rate_count,":")[2] as int) two_star_count,
+cast(split(rate_count,":")[4] as int) four_star_count,
+cast(split(rate_count,":")[5] as int)five_star_count
+from
+dw_shopee_item_dimt0
+where pt=${pt}
+ ) a
+inner join
+(select itemid,shopid,cast(split(rate_count,":")[0] as int) as rate_count,
+cast(split(rate_count,":")[1] as int) one_star_count,
+cast(split(rate_count,":")[2] as int) two_star_count,
+cast(split(rate_count,":")[4] as int) four_star_count,
+cast(split(rate_count,":")[5] as int)five_star_count
+from
+dw_shopee_item_dimt0
+where pt=${pt,day:1}
+) b
+on a.itemid=b.itemid
+where ((b.four_star_count>0 or b.five_star_count>0)and (a.four_star_count=0 and a.five_star_count=0))
+or ((b.one_star_count>0 or b.two_star_count>0) and (a.one_star_count=0 and a.two_star_count=0))
+or (a.rate_count=0 and b.rate_count>0);

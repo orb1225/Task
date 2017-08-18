@@ -12,11 +12,13 @@ class Task(object):
         self.status = 0
         self.priority=param.get("priority",3)
         self.taskname=taskname
-        self.type=type#hive任务或者同步任务
+        self.type=type#hive任务或者同步任务,尚未使用
         self.script=param.get("script",[])
-        self.importance=param.get("importance",0)
-        self.parents=param.get("parents",[])
-        self.childs=param.get("childs",[])
+        self.importance=param.get("importance",0)#尚未使用
+        self.reliability=param.get("reliability",[])#尚未使用
+
+
+
 
 class hive_task(Task):
     def replace(self):

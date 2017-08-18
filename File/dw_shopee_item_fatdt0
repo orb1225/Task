@@ -1,0 +1,12 @@
+alter table dw_shopee_item_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_shopee_item_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,itemid,shopid,title,images,regexp_replace(original_price,"00000",""),regexp_replace(price,"00000",""),rate_star,rate_count,sold,stock,if(shopee_verified="True",1,0),
+liked_count,if(adult="True",1,0),place,from_unixtime(ctime) as create_time,if(wholesale="True",1,0),
+coin_earn,cat,hashtag_list,wholesale_list,models,description,if(official_shop="True",1,0),if(free_shipping="True",1,0)
+,status
+from
+   (
+   select *,Row_Number() OVER (partition by itemid ORDER BY pt asc) sort_order
+   from scrapy.tmp_shopeeproduct  where pt>=${pt} and pt<${pt,day:1} and itemid is not null and shopid is not null
+   ) c
+   where sort_order=1;

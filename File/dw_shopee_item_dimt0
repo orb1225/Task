@@ -1,0 +1,12 @@
+alter table dw_shopee_item_dimt0 drop partition(pt=${pt});
+insert overwrite table dw_shopee_item_dimt0 partition(pt=${pt})
+select coalesce(a.insert_date,b.insert_date),coalesce(a.itemid,b.itemid),coalesce(a.shopid,b.shopid),coalesce(a.title,b.title),coalesce(a.images,b.images),
+coalesce(a.original_price,b.original_price),coalesce(a.price,b.price),coalesce(a.rate_star,b.rate_star),coalesce(a.rate_count,b.rate_count),coalesce(a.sold,b.sold),
+coalesce(a.stock,b.stock),coalesce(a.shopee_verified,b.shopee_verified,0),coalesce(a.liked_count,b.liked_count,0),coalesce(a.adult,b.adult,0),coalesce(a.place,b.place),
+coalesce(a.create_time,b.create_time),coalesce(a.wholesale,b.wholesale),coalesce(a.coin_earn,b.coin_earn,0),coalesce(a.cat,b.cat),coalesce(a.hashtag_list,b.hashtag_list),
+coalesce(a.wholesale_list,b.wholesale_list),coalesce(a.models,b.models),coalesce(a.description,b.description),
+coalesce(a.official_shop,b.official_shop),coalesce(a.free_shipping,b.free_shipping),coalesce(a.status,b.status)
+from
+(select * from dw_shopee_item_fatdt0 where pt=${pt}) a
+full join
+(select * from dw_shopee_item_dimt0 where pt=${pt,day:-1}) b on (a.itemid=b.itemid);
