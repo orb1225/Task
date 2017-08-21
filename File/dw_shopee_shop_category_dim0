@@ -1,0 +1,6 @@
+alter table dw_shopee_shop_category_dim0 drop partition(pt=${pt});
+insert overwrite table dw_shopee_shop_category_dim0 partition(pt=${pt})
+select "${dt}" insert_date,shopid,cast(split(sku_str,":")[0] as int) category_id,
+split(sku_str,":")[1]  as category_name,cast(split(sku_str,":")[2] as int) category_item_count
+from dw_shopee_shop_base_fatdt0_incre a lateral view explode(split(category_list,"\\\\;"))  b as sku_str
+where pt=${pt}  and length(category_list)>0 and coalesce(status,-1)<>0;

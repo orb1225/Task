@@ -1,0 +1,29 @@
+insert overwrite table st_wish_indus_buyers_analy_fatdt0 partition (pt=${pt})
+select "${dt}",a.buy_sex,count(*),b.cat_id,"buy_sex" as type from
+(select buy_sex,itemid from st_wish_buyers_analy_dimt0 where pt=${pt,day:1} and length(buy_sex)>0) a
+inner join
+(select itemid,cat_id from  dw_wish_indus_item_fatdt0 where pt=${pt}) b
+on (a.itemid=b.itemid) group by a.buy_sex,b.cat_id;
+
+insert into table st_wish_indus_buyers_analy_fatdt0 partition (pt=${pt})
+select "${dt}",
+case
+  when a.buy_age<20  then 1
+  when a.buy_age>=20 and a.buy_age<=30 then 2
+  when a.buy_age>30  and a.buy_age<=40 then 3
+  when a.buy_age>40  and a.buy_age<=50 then 4
+  when a.buy_age>50 then 5
+end age_level,count(*),b.cat_id,"buy_age" as type
+from
+(select buy_age,itemid from st_wish_buyers_analy_dimt0 where pt=${pt,day:1} and length(buy_age)>0) a
+inner join
+(select itemid,cat_id from  dw_wish_indus_item_fatdt0 where pt=${pt}) b
+on (a.itemid=b.itemid)
+GROUP BY
+case
+  when a.buy_age<20  then 1
+  when a.buy_age>=20 and a.buy_age<=30 then 2
+  when a.buy_age>30  and a.buy_age<=40 then 3
+  when a.buy_age>40  and a.buy_age<=50 then 4
+  when a.buy_age>50 then 5
+end,b.cat_id;

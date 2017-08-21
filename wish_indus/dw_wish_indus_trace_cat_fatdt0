@@ -1,0 +1,11 @@
+alter table dw_wish_indus_trace_cat_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_indus_trace_cat_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,coalesce(a.cat_id,b.cat_id),coalesce(a.merchant_id,b.merchant_id),
+coalesce(a.itemid,b.itemid),coalesce(a.wish_price,b.wish_price),
+coalesce(a.already_recommended_flag,b.already_recommended_flag),
+coalesce(a.amount,b.amount),coalesce(a.price,b.price),
+coalesce(a.wish_save,b.wish_save),coalesce(a.rate_num,b.rate_num),
+if(b.itemid is null,1,0) add_flag,if(a.itemid is null,1,0) del_flag
+from (select * from dw_wish_indus_item_fatdt0 where pt=${pt} and itemid is not null) a
+full join (select * from dw_wish_indus_item_fatdt0 where pt=${pt,day:-1} and itemid is not null) b on(a.cat_id=b.cat_id and a.itemid=b.itemid)
+where a.itemid is null or b.itemid is null;

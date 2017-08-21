@@ -1,0 +1,8 @@
+alter table st_wish_new_shop_item_surge1_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_wish_new_shop_item_surge1_fatdt7 partition(pt=${pt})
+select a.insert_date,a.merchant_id,a.itemid,a.itemname,a.main_image,a.cat_ids,a.rate_score,a.seller_price,a.seller_freight_price,a.wish_price,a.wish_freight_price,a.already_recommended_flag,a.amount_7,a.wish_save_7,a.gen_time,a.gen_time,b.amount_diff,a.small_image,a.is_hwc
+from
+(select * from st_wish_new_shop_item_hot_fatdt7 where pt=${pt}) a
+inner join
+(select * from st_wish_item_surge1_fatdt7 where pt=${pt}) b
+on (a.itemid=b.itemid);

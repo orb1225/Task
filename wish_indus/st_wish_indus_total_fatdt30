@@ -1,0 +1,16 @@
+alter table st_wish_indus_total_fatdt30 drop partition(pt=${pt});
+insert overwrite table st_wish_indus_total_fatdt30 partition(pt=${pt})
+select "${dt}" insert_date,a.cat_id,a.avg_price,a.hot_avg_price,a.amount,a.price,a.wish_save,
+a.rate_num,a.item_count,a.hot_item_count,a.shop_count,a.hot_shop_count,a.wish_recommended_count,
+coalesce(b.add_count,0) add_count,coalesce(b.del_count,0) del_count,a.removed_count,a.deleted_count
+from (
+         select cat_id,sum(wish_price)/count(itemid) avg_price,
+         coalesce(sum(if(amount>0,wish_price,0))/count(if(amount>0,1,NULL)),0) hot_avg_price,sum(amount) amount,
+         sum(price) price,sum(wish_save) wish_save,sum(rate_num) rate_num,count(itemid) item_count,
+         count(if(amount>0,1,NULL)) hot_item_count,count(distinct merchant_id) shop_count,
+         count(distinct if(amount>0,merchant_id,NULL)) hot_shop_count,count(if(already_recommended_flag>0,1,NULL)) wish_recommended_count,sum(removed_flag) removed_count,sum(deleted_flag) deleted_count
+         from dw_wish_indus_item_fatdt30 where pt=${pt} group by cat_id
+    ) a
+left join (select cat_id,sum(add_flag) add_count,sum(del_flag) del_count
+     from dw_wish_indus_trace_cat_fatdt0
+     where pt<=${pt} and pt>=${pt,day:-29} group by cat_id) b on(a.cat_id=b.cat_id);

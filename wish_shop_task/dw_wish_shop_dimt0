@@ -1,0 +1,6 @@
+alter table dw_wish_shop_dimt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_shop_dimt0 partition(pt=${pt})
+select insert_date,merchant_id,merchant_logo,merchant_nick,merchant_name,cat_ids,shop_total,
+shop_offer,shop_stock,shop_fbw,shop_rate,shop_save,shop_score
+from dw_wish_shop_all_dimt0 a
+where a.pt=${pt};

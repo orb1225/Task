@@ -1,0 +1,9 @@
+alter table st_wish_indus_recommend_tag_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_wish_indus_recommend_tag_fatdt7 partition(pt=${pt})
+select "${dt}" as insert_date,cat_id,recommend_tag,add_count_7,Row_Number() OVER (partition by cat_id ORDER BY add_count_7 desc) add_count_7_order
+from(select d1.cat_id as cat_id ,d1.recommend_tag as recommend_tag,(d1.item_count-coalesce(d2.item_count,0)) as add_count_7
+    from(select *from dw_wish_indus_recommend_tag_fatdt0 where pt=${pt}) d1
+left join
+        (select  * from dw_wish_indus_recommend_tag_fatdt0 where pt=${pt,day:-7}) d2
+on (d1.cat_id=d2.cat_id and d1.recommend_tag=d2.recommend_tag)
+) d3;

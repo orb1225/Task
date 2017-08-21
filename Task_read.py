@@ -2,7 +2,7 @@
 
 import os
 import os.path
-class table_Task(object):
+class Task_Read(object):
     #获得目录下所有任务名以及路径
     def get_taskname(self,filepath):
         rootdir=filepath
@@ -33,6 +33,6 @@ class table_Task(object):
 
 
 
-#table_Task1=table_Task()
+#table_Task1=Task_Read()
 #print table_Task1.get_taskname("./File")
 #print table_Task1.get_script("./File/st_shopee_item_rate_milestone")

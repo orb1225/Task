@@ -1,0 +1,15 @@
+alter table dw_shopee_item_sku_split_incre drop partition(pt=${pt});
+insert overwrite table dw_shopee_item_sku_split_incre partition(pt=${pt})
+select insert_date,shopid,itemid,
+regexp_replace((split(sku_str,":")[0]),"\\"","") as sku_id,
+cast(split(sku_str,":")[1] as decimal(15,2))/100000 as sku_price,
+cast(split(sku_str,":")[2] as decimal(15,2))/100000 as sku_original_price,
+split(sku_str,":")[3] as sku_sold,split(sku_str,":")[4] as sku_stock,
+split(sku_str,":")[5] as sku_name,
+from_unixtime(cast(split(sku_str,":")[6] as int)) as create_time,
+split(sku_str,":")[7] as sku_type
+from
+(
+select insert_date,shopid,itemid,models,pt from dw_shopee_item_dimt0 where pt=${pt}  and
+ length(models)>0
+) a lateral view explode(split(models,"\\\\;"))  b as sku_str;

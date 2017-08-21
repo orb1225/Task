@@ -1,0 +1,42 @@
+alter table st_shopee_shop_base_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_base_fatdt0 partition(pt=${pt})
+select insert_date,a.shopid,response_rate,last_active_time,rating_count,rating_star,item_count,create_time,
+if(shopee_verified="True",1,0) as shopee_verified,
+coalesce(preparation_time,-1),following_count,follower_count,if(official_shop="True",1,0),coalesce(category_count,0),amount_1,amount_count,avg_amount_price,avg_price,
+avg_original_price,like_count_1,rate_count_1,amount_price,like_count_7,rate_count_7,amount_7,amount_price_7,coalesce(new_item_count_7,0),
+like_count_30,rate_count_30,amount_30,amount_price_30,sold_30
+from
+(select insert_date,shopid,response_rate,last_active_time,rating_count,rating_star,item_count,create_time,shopee_verified,
+preparation_time,following_count,follower_count,official_shop
+from
+dw_shopee_shop_base_fatdt0_incre
+where pt=${pt} and coalesce(status,-1)<>0) a
+left join
+(select shopid,sum(amount_1) as amount_1,count(if(amount_1>0,1,NULL)) as amount_count,
+sum(if(amount_1>0,price_1,0))/if(sum(if(amount_1>0,1,0))=0,1,sum(if(amount_1>0,1,0))) as avg_amount_price,
+sum(like_count_1) as like_count_1,sum(rate_count_1) as rate_count_1,sum(amount_price) as amount_price,
+sum(sold) as sold_30,avg(price_1) as avg_price,avg(original_price_1) as avg_original_price
+from st_shopee_item_base_fatdt0
+where pt=${pt}
+group by shopid) b
+on a.shopid=b.shopid
+left join
+(select shopid,like_count_7,rate_count_7,amount_7,amount_price_7,new_item_count_7
+from st_shopee_shop_base_fatdt7
+where pt=${pt}) c
+on a.shopid=c.shopid
+left join
+(
+select shopid,like_count_30,rate_count_30,amount_30,amount_price_30
+from st_shopee_shop_base_fatdt30
+where pt=${pt}
+)d
+on a.shopid=d.shopid
+left join
+(
+select shopid,count(category_id) as category_count
+from dw_shopee_shop_category_dim0
+where pt=${pt}
+group by shopid
+)e
+on a.shopid=e.shopid;

@@ -1,0 +1,78 @@
+alter table st_shopee_item_base_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_base_fatdt0 partition(pt=${pt})
+select "${dt}"as insert_date,a.itemid,a.shopid,a.cat,title,original_price,
+if(low_original_price=-1,original_price,low_original_price) low_original_price,
+if(high_original_price=-1,original_price,high_original_price) high_original_price,
+price,if(low_price=-1,price,low_price) low_price ,if(high_price=-1,price,high_price) high_price,
+rate_star,a.rate_count,shopee_verified,coalesce(coin_earn,0) as coin_earn,coalesce(a.liked_count,0),adult,stock,
+place,create_time,hashtag_list,rate_level_count,
+coalesce(avg_origin_price,original_price) as original_price_1,coalesce(avg_price,price) as price_1,
+c.amount as amount_1,c.amount_price,
+(coalesce(c.amount,0)-coalesce(g.amount,0))/if(g.amount is null or g.amount=0,1,g.amount) add_rate
+,b.liked_count-a.liked_count as like_count_1,
+b.rate_count-a.rate_count as rate_count_1,d.amount_7,d.like_count_7,d.rate_count_7,e.amount_30,
+e.like_count_30,e.rate_count_30,sold,
+(coalesce(d.amount_7,0)/7)-(coalesce(h.amount_7,0)/7)/if(h.amount_7 is null or h.amount_7=0,1,h.amount_7),
+a.insert_date
+from
+(select itemid,shopid,cat,title,insert_date,
+cast(split(original_price,":")[0] as decimal(15,2)) as original_price,
+cast(split(original_price,":")[1] as decimal(15,2)) as low_original_price,
+cast(split(original_price,":")[2] as decimal(15,2)) as high_original_price,
+cast(split(price,":")[0] as decimal(15,2)) as price,
+cast(split(price,":")[1] as decimal(15,2)) as low_price,
+cast(split(price,":")[2] as decimal(15,2)) as high_price,rate_star,
+cast(split(rate_count,":")[0] as int) as rate_count,
+shopee_verified,liked_count,adult,stock,place,hashtag_list,
+rate_count as rate_level_count,sold,create_time
+from dw_shopee_item_dimt0
+where pt=${pt}  and status<>"0" and status<>"1"
+) a
+left join
+(
+select shopid,itemid,liked_count,cast(split(rate_count,":")[0] as int) as rate_count
+from dw_shopee_item_dimt0
+where pt=${pt,day:1}
+)b
+on (a.itemid=b.itemid)
+left join
+(select shopid,itemid,amount,amount_price,avg_price,avg_origin_price
+from st_shopee_item_offer_fatdt0
+where pt=${pt}
+)c
+on (a.itemid=c.itemid)
+left join
+(
+select shopid,itemid,like_count_7,rate_count_7,amount_7
+from st_shopee_item_base_fatdt7
+where pt=${pt}
+)d
+on (a.itemid=d.itemid)
+left join
+(
+select shopid,itemid,amount_7
+from st_shopee_item_base_fatdt7
+where pt=${pt,day:-7}
+)h
+on (a.itemid=h.itemid)
+left join
+(select shopid,itemid,like_count_30,rate_count_30,amount_30
+from st_shopee_item_base_fatdt30
+where pt=${pt}
+)e
+on (a.itemid=e.itemid)
+left join
+(
+select itemid,shopid,max(coin_earn_sku) as coin_earn
+from dw_shopee_coin_earn_sku_split
+where pt=${pt}
+group by itemid,shopid
+)f
+on (a.itemid=f.itemid )
+left join
+(
+select shopid,itemid,amount
+from st_shopee_item_offer_fatdt0
+where pt=${pt,day:-1}
+)g
+on(a.itemid=g.itemid);

@@ -1,0 +1,17 @@
+alter table dw_shopee_item_sku_split drop partition(pt=${pt});
+insert overwrite table dw_shopee_item_sku_split partition(pt=${pt})
+select "${dt}" insert_date,substr(pt,1,8),shopid,itemid,regexp_replace((split(sku_str,":")[0]),"\\"","") as sku_id, cast(split(sku_str,":")[1] as decimal(15,2))/100000 as sku_price,cast(split(sku_str,":")[2] as decimal(15,2))/100000 as sku_original_price,
+split(sku_str,":")[3] as sku_sold,split(sku_str,":")[4] as sku_stock,split(sku_str,":")[5] as sku_name,from_unixtime(cast(split(sku_str,":")[6] as int)) as create_time,split(sku_str,":")[7] as sku_type
+from
+(
+    select c.shopid,c.itemid,c.models,c.pt from
+    (select itemid from dw_shopee_item_fatdt0 where pt=${pt} and length(models)>0) a
+    inner join
+    (select itemid from dw_shopee_item_dimt0 where pt=${pt,day:-1} and length(models)>0) b on (a.itemid=b.itemid)
+    inner join
+    (select shopid,itemid,models,pt from dw_shopee_item_dimt0 where pt>=${pt,day:-1} and pt<=${pt} and length(models)>0) c on (b.itemid=c.itemid)
+) a lateral view explode(split(models,"\\\\;"))  b as sku_str
+;
+insert overwrite table dw_shopee_item_sku_split partition(pt=${pt})
+select insert_date,pt_str,shopid,itemid,sku_id,sku_price,sku_original_price,sku_sold,sku_stock,sku_name,create_time,sku_type
+from dw_shopee_item_sku_split where pt=${pt} and sku_id is not null ;

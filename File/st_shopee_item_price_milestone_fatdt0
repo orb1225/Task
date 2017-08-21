@@ -1,0 +1,9 @@
+alter table st_shopee_item_price_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_price_milestone_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.shopid,a.itemid,a.price,b.price
+    from
+   (select shopid,itemid,cast(split(price,":")[0] as decimal(15,2)) as price from dw_shopee_item_dimt0 where pt=${pt})a
+    inner join
+    (select shopid,itemid,cast(split(price,":")[0] as decimal(15,2)) as price from dw_shopee_item_dimt0 where pt=${pt,day:1})b
+on  a.itemid=b.itemid
+where a.price<>b.price;

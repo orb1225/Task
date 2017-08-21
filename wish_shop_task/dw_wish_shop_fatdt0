@@ -1,0 +1,15 @@
+alter table dw_wish_shop_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_shop_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.merchant_id,a.merchant_logo,a.merchant_nick,a.merchant_name,b.cat_ids,
+a.shop_total,0 shop_offer,0 shop_stock,0 shop_fbw,a.shop_rate,0 shop_save,a.shop_score
+from ods_wish_shop a
+left join
+    (
+        select x.merchant_id,concat_ws("\;",collect_set(x.cat_id)) cat_ids from
+        (
+          select a.merchant_id,b.cat_id
+          from dw_wish_indus_shop_fatdt0 a lateral  view explode(split(cat_id,"\;")) b as cat_id  where a.pt=${pt,day:-2} and a.cat_id!=""
+           group by a.merchant_id,b.cat_id
+        )x group by x.merchant_id
+     ) b on(a.merchant_id=b.merchant_id)
+where a.pt=${pt};

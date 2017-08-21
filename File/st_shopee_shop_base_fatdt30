@@ -1,0 +1,7 @@
+alter table st_shopee_shop_base_fatdt30 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_base_fatdt30 partition(pt=${pt})
+select "${dt}"as insert_date,shopid,sum(like_count_30),sum(rate_count_30),sum(amount_30),sum(amount_price_30)
+from
+st_shopee_item_base_fatdt30
+where pt=${pt}
+group by shopid;

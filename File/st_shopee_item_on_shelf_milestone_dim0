@@ -1,0 +1,4 @@
+alter table st_shopee_item_on_shelf_milestone_dim0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_on_shelf_milestone_dim0 partition(pt=${pt})
+select  "${dt}" as insert_date,shopid,itemid,create_time
+from dw_shopee_item_dimt0 where pt=${pt};

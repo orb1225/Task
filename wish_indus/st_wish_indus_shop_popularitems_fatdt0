@@ -1,0 +1,21 @@
+alter table st_wish_indus_shop_popularitems_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_indus_shop_popularitems_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,cat_id,e.merchant_id,popular_items_count,indus_popular_items_count from
+(
+    select c.merchant_id,count(c.itemid) as popular_items_count from
+        (select merchant_id,itemid from  st_wish_item_base_fatdt0 where pt=${pt}  and offer>100) c
+         inner join
+        (select  merchant_id,itemid from st_wish_item_offer_fatdt0 where pt<=${pt} and pt>=${pt,day:-29} and amount>0 group by merchant_id,itemid having count(itemid)>=30) d
+         on (c.merchant_id=d.merchant_id and c.itemid=d.itemid)
+        group by c.merchant_id
+) e
+left join
+(
+    select f1.merchant_id,count(f1.itemid) as indus_popular_items_count,cat_id from
+        (select merchant_id,itemid,cat_id from  dw_wish_indus_item_fatdt0 where pt=${pt}  and offer>100 group by merchant_id,itemid,cat_id) f1
+         inner join
+        (select  merchant_id,itemid from st_wish_item_offer_fatdt0 where pt<=${pt} and pt>=${pt,day:-29} and amount>0 group by merchant_id,itemid having count(itemid)>=30) f2
+        on (f1.merchant_id=f2.merchant_id and f1.itemid=f2.itemid)
+        group by f1.merchant_id,cat_id
+) f
+on (e.merchant_id=f.merchant_id);

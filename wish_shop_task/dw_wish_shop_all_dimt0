@@ -1,0 +1,9 @@
+alter table dw_wish_shop_all_dimt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_shop_all_dimt0 partition(pt=${pt})
+select coalesce(a.insert_date,b.insert_date),coalesce(a.merchant_id,b.merchant_id),coalesce(a.merchant_logo,b.merchant_logo),
+coalesce(a.merchant_nick,b.merchant_nick),coalesce(a.merchant_name,b.merchant_name),coalesce(a.cat_ids,b.cat_ids),
+coalesce(a.shop_total,b.shop_total),coalesce(a.shop_offer,b.shop_offer),coalesce(a.shop_stock,b.shop_stock),coalesce(a.shop_fbw,b.shop_fbw),
+coalesce(a.shop_rate,b.shop_rate),coalesce(a.shop_save,b.shop_save),coalesce(a.shop_score,b.shop_score)
+from (select * from dw_wish_shop_fatdt0 where pt=${pt}) a
+full join
+(select * from dw_wish_shop_all_dimt0 where pt=${pt,day:-1}) b on(a.merchant_id=b.merchant_id);

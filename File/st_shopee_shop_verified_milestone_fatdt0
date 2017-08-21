@@ -1,0 +1,19 @@
+alter table st_shopee_shop_verified_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_verified_milestone_fatdt0 partition(pt=${pt})
+select "${dt}"as insert_date,a.shopid,
+if(a.shopee_verified="False" and b.shopee_verified="True",1,0) add_shopee_verified,
+if(a.shopee_verified="True" and b.shopee_verified="False",1,0) cancel_shopee_verified
+from
+  (select shopid,shopee_verified
+  from
+  dw_shopee_shop_base_fatdt0_incre
+  where pt=${pt}
+  )a
+  inner join
+  (select shopid,shopee_verified
+  from
+  dw_shopee_shop_base_fatdt0_incre
+  where pt=${pt,day:1}
+  )b
+  on a.shopid=b.shopid
+where a.shopee_verified<>b.shopee_verified and a.shopee_verified<>"" and b.shopee_verified<>"";

@@ -1,0 +1,23 @@
+alter table st_shopee_item_sku_offer_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_sku_offer_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.shopid,a.itemid,a.sku_id,a.sku_sold-b.sku_sold as sold_amount,
+a.sku_stock-b.sku_stock as stock_amount,
+cast((a.sku_sold-b.sku_sold)*a.sku_price as decimal(15,2)),a.sku_price,a.sku_original_price
+from
+(select shopid,itemid,sku_id,sku_sold,sku_stock,sku_price,sku_original_price
+from dw_shopee_item_sku_split where pt=${pt,day:1} and pt_str=cast(substr(${pt,day:1},1,8) as int)) a
+inner join
+(select shopid,itemid,sku_id,sku_sold,sku_stock,sku_price,sku_original_price
+from dw_shopee_item_sku_split where pt=${pt,day:1} and pt_str=cast(substr(${pt},1,8) as int)) b
+on (a.itemid=b.itemid and a.sku_id=b.sku_id);
+insert into table st_shopee_item_sku_offer_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.shopid,a.itemid,a.sku_id,a.sku_sold,a.sku_stock as stock_amount,
+cast((a.sku_sold)*a.sku_price as decimal(15,2)),a.sku_price,a.sku_original_price
+ from
+(select shopid,itemid,sku_id,sku_sold,sku_stock,sku_price,sku_original_price,create_time
+from dw_shopee_item_sku_split where pt=${pt,day:1} and pt_str=cast(substr(${pt,day:1},1,8) as int)) a
+left outer join
+(select shopid,itemid,sku_id,sku_sold,sku_stock,sku_price
+from dw_shopee_item_sku_split where pt=${pt,day:1} and pt_str=cast(substr(${pt},1,8) as int)) b
+on (a.itemid=b.itemid and a.sku_id=b.sku_id)
+where b.sku_id is null and a.sku_id is not null  ;

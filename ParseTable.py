@@ -1,7 +1,7 @@
 #coding=utf-8
 import re
 
-class parse_table(object):
+class Parse_Table(object):
     #解析出表名，作为依赖任务名称
     def extract_table_name(self,script):
         text=script
@@ -64,11 +64,13 @@ class parse_table(object):
 
 
 
+#测试的，没什么用
 
-
-a=parse_table()
+a=Parse_Table()
 b="""from
-(select * from dw_shopee_item_dimt0  where pt=${pt}) a
+(select *
+from
+dw_shopee_item_dimt0  where pt=${pt}) a
 inner join
 (select * from dw_shopee_item_dimt0  where pt=${pt,day:1}) b
 on(a.itemid=b.itemid)

@@ -1,0 +1,9 @@
+alter table dw_shopee_coin_earn_sku_split drop partition(pt=${pt});
+insert overwrite table dw_shopee_coin_earn_sku_split partition(pt=${pt})
+select "${dt}" insert_date,shopid,itemid,if(split(sku_str,":")[0]<>"",split(sku_str,":")[0],-1) as sku_id,
+cast(split(sku_str,":")[1] as int) as coin_earn_sku
+from dw_shopee_item_dimt0 a lateral view explode(split(coin_earn,"\\\\;"))  b as sku_str
+where pt=${pt}  and length(coin_earn)>0 and coin_earn<>"True" and coin_earn<>"False";
+insert overwrite table dw_shopee_coin_earn_sku_split partition(pt=${pt})
+select "${dt}" insert_date,shopid,itemid,sku_id,coin_earn_sku
+from dw_shopee_coin_earn_sku_split where pt=${pt} and coin_earn_sku is not null and sku_id is  not null;

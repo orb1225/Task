@@ -1,0 +1,14 @@
+alter table st_shopee_item_like_rate_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_like_rate_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.itemid,a.shopid,a.cat,coalesce(a.liked_count,0)-coalesce(b.liked_count,0) as like_count_1,
+coalesce(a.rate_count,0)-coalesce(b.rate_count,0) as rate_count_1,
+coalesce(a.stock,0)-coalesce(b.stock,0) as stock_1
+from
+(select  itemid,shopid,cat,liked_count,cast(coalesce(split(rate_count,":")[0],0) as int) as rate_count,stock
+from  dw_shopee_item_dimt0
+where pt=${pt,day:1}) a
+inner join
+(select  itemid,shopid,cat,liked_count,cast(coalesce(split(rate_count,":")[0],0) as int) as rate_count,stock
+from  dw_shopee_item_dimt0
+where pt=${pt}) b
+on a.itemid=b.itemid

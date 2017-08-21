@@ -1,0 +1,25 @@
+alter table st_wish_indus_total_layout_fatdt7 drop partition(pt=${pt},layout_type=2);
+insert overwrite table st_wish_indus_total_layout_fatdt7 partition(pt=${pt},layout_type=2)
+select "${dt}" insert_date,cat_id,
+case
+when amount=0 then 1
+when amount/7>=1 and amount/7<=10 then 2
+when amount/7>=11 and amount/7<=30 then 3
+when amount/7>=31 and amount/7<=60 then 4
+when amount/7>=61 and amount/7<=100 then 5
+when amount/7>100 then 6
+else 0
+end layout_level,
+sum(amount),sum(price),count(*) cnt
+from dw_wish_indus_shop_fatdt7
+where pt=${pt}
+group by cat_id,
+case
+when amount=0 then 1
+when amount/7>=1 and amount/7<=10 then 2
+when amount/7>=11 and amount/7<=30 then 3
+when amount/7>=31 and amount/7<=60 then 4
+when amount/7>=61 and amount/7<=100 then 5
+when amount/7>100 then 6
+else 0
+end;

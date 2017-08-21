@@ -1,0 +1,6 @@
+alter table st_shopee_shop_detail_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_detail_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,shopid,name,images,link,description
+from
+dw_shopee_shop_base_fatdt0_incre
+where pt=${pt} and coalesce(status,-1)<>0 ;

@@ -1,0 +1,6 @@
+alter table st_wish_indus_top_item_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_wish_indus_top_item_fatdt7 partition(pt=${pt})
+select "${dt}" insert_date,cat_id,merchant_id,itemid,wish_price,already_recommended_flag,
+amount,price,wish_save,rate_num
+from dw_wish_indus_item_fatdt7
+where pt=${pt} and amount>0;

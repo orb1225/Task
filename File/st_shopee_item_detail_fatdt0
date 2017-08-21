@@ -1,0 +1,5 @@
+alter table st_shopee_item_detail_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_detail_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,itemid,shopid,title,images,description,hashtag_list,models as sku_imformation,coin_earn
+from dw_shopee_item_dimt0
+where pt=${pt} and status<>"0" and status<>"1";

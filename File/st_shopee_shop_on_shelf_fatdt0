@@ -1,0 +1,6 @@
+alter table st_shopee_shop_on_shelf_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_on_shelf_fatdt0 partition(pt=${pt})
+select "${dt}"as insert_date,shopid,count(itemid),on_shelf_time
+from
+st_shopee_item_on_shelf_milestone_dim0 where pt=${pt}
+group by shopid,on_shelf_time;

@@ -1,0 +1,15 @@
+alter table dw_shopee_shop_base_fatdt0_incre drop partition(pt=${pt});
+insert overwrite table dw_shopee_shop_base_fatdt0_incre partition(pt=${pt})
+select "${dt}" as insert_date,shopid,follower_count,rating_percentage,name,link,description,item_count,shopee_verified,
+create_time,category_list,following_count,is_seller,last_active_time,response_rate,had_order,rating_count,webchat_response_rate,
+rating_star,preparation_time,official_shop,images,status
+from dw_shopee_shop_base_fatdt0 where pt=${pt}
+union all
+select b.insert_date,b.shopid,b.follower_count,b.rating_percentage,b.name,b.link,b.description,b.item_count,
+b.shopee_verified,b.create_time,b.category_list,b.following_count,b.is_seller,b.last_active_time,b.response_rate,b.had_order,
+b.rating_count,b.webchat_response_rate,b.rating_star,b.preparation_time,b.official_shop,b.images,b.status
+from
+(select * from dw_shopee_shop_base_fatdt0_incre where pt=${pt,day:-1}) b
+left outer join
+(select * from dw_shopee_shop_base_fatdt0 where pt=${pt}) c
+on  b.shopid=c.shopid where c.shopid is null;

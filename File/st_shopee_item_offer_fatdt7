@@ -1,0 +1,5 @@
+alter table st_shopee_item_offer_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_offer_fatdt7 partition(pt=${pt})
+select  "${dt}" as insert_date,itemid,shopid,sum(coalesce(amount_7,0)),sum(coalesce(stock_amount,0)),sum(coalesce(amount_price_7,0))
+from st_shopee_item_sku_offer_fatdt7 where pt=${pt} and sku_id is not null
+group by itemid,shopid;

@@ -1,0 +1,11 @@
+alter table st_wish_shop_offer_fatdt30 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_offer_fatdt30 partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,sum(amount),sum(price),sum(wish_save),sum(rate_num),max(item_count),
+max(hot_item_count),max(wish_recommended_count),max(item_cat_count),max(avg_price),max(hot_avg_price),
+sum(new_item_count),sum(change_price_count),sum(change_tag_count),sum(change_audit_count),
+sum(change_refer_count),sum(change_cat_count),sum(change_price1_count),sum(change_tag1_count),sum(change_msrp_count),
+sum(removed_count),sum(deleted_count),sum(save_count),sum(amount_count),sum(good_rate_count),sum(bad_rate_count),
+sum(change_audit_0t1_count),sum(change_audit_1t0_count),sum(change_refer_0t1_count),sum(change_refer_1t0_count)
+from st_wish_shop_offer_fatdt0
+where pt<=${pt} and pt>=${pt,day:-29}
+group by merchant_id;

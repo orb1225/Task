@@ -1,0 +1,9 @@
+alter table dw_wish_indus_recommend_tag_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_indus_recommend_tag_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,cat_id,recommend_tag,item_count,Row_Number() OVER (partition by cat_id ORDER BY item_count desc) item_count_order
+from(select count(a.itemid) as item_count,a.cat_id,b.recommend_tag from
+        (select  cat_id,itemid from dw_wish_indus_item_fatdt0 where  pt=${pt} and itemid is not null and cat_id<>"0") a
+            inner join
+        (select itemid,recommend_tag  from st_wish_recommend_tag_detail_fatdt0 where  pt=${pt} and itemid is not null and inuds_flag=1) b
+on (a.itemid=b.itemid)
+group by a.cat_id,b.recommend_tag) c;

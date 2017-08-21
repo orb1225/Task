@@ -1,0 +1,24 @@
+alter table st_shopee_sku_coinearn_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_sku_coinearn_milestone_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.shopid,a.itemid,a.sku_id,c.sku_name,c.sku_type,a.coin_earn_sku,b.coin_earn_sku
+from
+(select shopid,itemid,sku_id,coin_earn_sku
+from
+dw_shopee_coin_earn_sku_split
+where pt=${pt}
+)a
+inner join
+(select  shopid,itemid,sku_id,coin_earn_sku
+from
+dw_shopee_coin_earn_sku_split
+where pt=${pt,day:1}
+)b
+on a.sku_id=b.sku_id and a.itemid=b.itemid
+left join
+(select shopid,itemid,sku_id,sku_name,sku_type
+from
+dw_shopee_item_sku_split_incre
+where pt=${pt}
+)c
+on a.sku_id=c.sku_id and a.itemid=c.itemid
+where a.coin_earn_sku<>b.coin_earn_sku;

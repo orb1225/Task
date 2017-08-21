@@ -1,0 +1,7 @@
+alter table dw_wish_indus_cat_dimt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_indus_cat_dimt0 partition(pt=${pt})
+select "${dt}" insert_date,coalesce(a.cat_id,b.cat_id),coalesce(a.merchant_id,b.merchant_id),
+coalesce(a.itemid,b.itemid),coalesce(a.insert_date,b.start_date)
+from (select * from dw_wish_indus_trace_cat_fatdt0 where pt=${pt} and cat_id!="0") a
+full join (select * from dw_wish_indus_cat_dimt0 where pt=${pt,day:-1}) b on(a.cat_id=b.cat_id and a.itemid=b.itemid)
+where a.del_flag!=1 or a.del_flag is NULL;

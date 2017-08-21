@@ -1,0 +1,26 @@
+alter table st_shopee_sku_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_sku_milestone_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.shopid,a.itemid,a.sku_id,a.sku_name,a.sku_type,
+if(a.sku_price<>b.sku_price,1,0) price_change_flag,
+if(a.sku_price<>b.sku_price,a.sku_price,-1) old_price,
+if(a.sku_price<>b.sku_price,b.sku_price,-1) new_price ,
+if(a.sku_stock<>b.sku_stock,1,0) stock_change_flag,
+if(a.sku_stock<>b.sku_stock,a.sku_stock,-1) old_sku_stock,
+if(a.sku_stock<>b.sku_stock,b.sku_stock,-1) new_sku_stock,
+if(a.sku_sold=0 and b.sku_sold>0,1,0) sku_sold_flag
+from
+(select shopid,itemid,sku_id,sku_price,sku_stock,sku_sold,sku_name,sku_type
+from
+dw_shopee_item_sku_split_incre
+where pt=${pt} )a
+inner join
+(
+select  shopid,itemid,sku_id,sku_price,sku_stock,sku_sold,sku_name,sku_type
+from
+dw_shopee_item_sku_split_incre
+where pt=${pt,day:1}
+)b
+on a.sku_id=b.sku_id and a.itemid=b.itemid
+where a.sku_price<>b.sku_price
+or a.sku_stock<>b.sku_stock
+or (a.sku_sold=0 and b.sku_sold>0);

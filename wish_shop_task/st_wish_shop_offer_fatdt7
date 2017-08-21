@@ -1,0 +1,23 @@
+alter table st_wish_shop_offer_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_offer_fatdt7 partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,sum(amount),sum(price),sum(wish_save),sum(rate_num),max(item_count),
+max(hot_item_count),max(wish_recommended_count),max(item_cat_count),max(avg_price),max(hot_avg_price),
+null new_item_count,sum(change_price_count),sum(change_tag_count),sum(change_audit_count),
+sum(change_refer_count),sum(change_cat_count),sum(change_price1_count),sum(change_tag1_count),sum(change_msrp_count),
+sum(removed_count),sum(deleted_count),sum(save_count),sum(amount_count),sum(good_rate_count),sum(bad_rate_count),
+sum(change_audit_0t1_count),sum(change_audit_1t0_count),sum(change_refer_0t1_count),sum(change_refer_1t0_count),null amount_sum_rate
+from st_wish_shop_offer_fatdt0
+where pt<=${pt} and pt>=${pt,day:-6}
+group by merchant_id;
+
+insert overwrite table st_wish_shop_offer_fatdt7 partition(pt=${pt})
+select a.insert_date,a.merchant_id,a.amount,a.price,a.wish_save,a.rate_num,a.item_count,a.hot_item_count,
+a.wish_recommended_count,a.item_cat_count,a.avg_price,a.hot_avg_price,coalesce(c.cnt,0) as new_item_count,a.change_price_count,
+a.change_tag_count,a.change_audit_count,a.change_refer_count,a.change_cat_count,a.change_price1_count,
+a.change_tag1_count,a.change_msrp_count,a.removed_count,a.deleted_count,a.save_count,a.amount_count,a.good_rate_count,
+a.bad_rate_count,a.change_audit_0t1_count,a.change_audit_1t0_count,a.change_refer_0t1_count,a.change_refer_1t0_count,cast(((a.amount-b.amount)/b.amount) as decimal(15,2)) as amount_sum_rate
+from st_wish_shop_offer_fatdt7 a
+left outer join st_wish_shop_offer_fatdt7 b on (a.merchant_id=b.merchant_id and b.pt=${pt,day:-7})
+left outer join (select merchant_id,count(*) cnt from st_wish_trace_new_item_fatdt0 where pt=${pt} and gen_time>="${dt,day:-6}" group by merchant_id) c
+on (a.merchant_id=c.merchant_id)
+where a.pt=${pt};

@@ -1,0 +1,64 @@
+alter table st_shopee_shop_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_milestone_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.shopid,coalesce(add_shopee_verified,False),
+coalesce(cancel_shopee_verified,False),coalesce(coin_earn_count,0),
+coalesce(item_forbbiden_count,0),coalesce(item_deleted_count,0),
+coalesce(price_count,0),coalesce(stock_count,0),coalesce(new_sku_count,0),
+coalesce(delete_sku_count,0),coalesce(soldbreak_item_count,0),
+coalesce(tag_count,0),coalesce(likebreak_count,0),coalesce(ratebreak_count,0),
+coalesce(goodratebreak_count,0),coalesce(badratebreak_count,0)
+from
+(select shopid from dw_shopee_shop_base_fatdt0_incre where pt=${pt}) a
+left join
+(select shopid,add_shopee_verified,cancel_shopee_verified
+from  st_shopee_shop_verified_milestone_fatdt0 where pt=${pt}
+)b on a.shopid=b.shopid
+left join
+(select shopid,coin_earn_count
+from st_shopee_shop_coin_earn_milestone_fatdt0 where pt=${pt}
+)c on a.shopid=c.shopid
+left join
+(select shopid,sum(if(item_forbbiden_flag=1,1,0)) as item_forbbiden_count ,
+sum(if(item_forbbiden_flag=1,1,0)) as item_deleted_count
+from st_shopee_item_status_milestone_fatdt0 where pt=${pt}
+group by shopid
+ )d on a.shopid=d.shopid
+left join
+(select shopid,count(itemid) as price_count
+from st_shopee_item_price_milestone_fatdt0 where pt=${pt}
+group by shopid
+)e on a.shopid=e.shopid
+left join
+(select shopid,count(itemid) as stock_count
+from st_shopee_item_stock_milestone_fatdt0 where pt=${pt}
+group by shopid
+)f on a.shopid=f.shopid
+left join
+(select shopid,new_sku_count
+from st_shopee_shop_new_sku_milestone_fatdt0  where pt=${pt}
+)g on a.shopid=g.shopid
+left join
+(select shopid,delete_sku_count
+from st_shopee_shop_delete_sku_milestone_fatdt0 where pt=${pt}
+)h on a.shopid=h.shopid
+left join
+(select shopid,soldbreak_item_count
+from st_shopee_shop_sold_milestone_fatdt0 where pt=${pt}
+)i on a.shopid=i.shopid
+left join
+(select shopid,count(itemid) as tag_count
+from st_shopee_item_tag_milestone_fatdt0 where pt=${pt}
+group by shopid
+)j on a.shopid=j.shopid
+left join
+(select shopid,count(itemid) as likebreak_count
+from st_shopee_item_like_milestone_fatdt0 where pt=${pt}
+group by shopid
+)k on a.shopid=k.shopid
+left join
+(select shopid,sum(if(rate_count_flag=1,1,0))as ratebreak_count,
+sum(if(good_rate_flag=1,1,0)) as goodratebreak_count,
+sum(if(bad_rate_flag=1,1,0)) as badratebreak_count
+from st_shopee_item_rate_milestone where pt=${pt}
+group by shopid
+)l on a.shopid=l.shopid;

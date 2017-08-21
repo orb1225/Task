@@ -1,0 +1,15 @@
+alter table st_wish_shop_cat_fatdt30 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_cat_fatdt30 partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,acat_id,sum(amount_30),sum(price_30),sum(wish_save_30),sum(rate_num_30),
+count(*) item_count,count(if(amount_30>0,1,NULL)) hot_item_count,count(if(already_recommended_flag=1,1,NULL)) wish_recommended_count,
+sum(seller_price+seller_freight_price)/count(*) avg_price,
+coalesce(sum(if(amount_30>0,seller_price+seller_freight_price,0))/count(if(amount_30>0,1,NULL)),0) hot_avg_price
+from (
+select a.cat_id acat_id,b.*,Row_Number() OVER (partition by a.cat_id,b.merchant_id,b.itemid ORDER BY b.amount_1 desc) sort_order
+from (select * from dw_wish_tmp_cat_dimt0 where pt=${g_wish_cat_pt}) a
+inner join (select *
+            from st_wish_item_base_fatdt0 lateral view explode(split(cat_ids,"\;")) subview AS cat_id
+            where pt=${pt} and removed_flag=0 and deleted_flag=0) b on(a.sub_id=b.cat_id)
+) x
+where sort_order=1
+group by merchant_id,acat_id;

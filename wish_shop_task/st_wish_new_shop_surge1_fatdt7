@@ -1,0 +1,7 @@
+alter table st_wish_new_shop_surge1_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_wish_new_shop_surge1_fatdt7 partition(pt=${pt})
+select "${dt}" insert_date,a.merchant_id,a.merchant_logo,a.merchant_nick,a.merchant_name,a.item_count,a.amount_7,a.price_7,a.wish_save_7,a.new_item_count,
+a.amount_diff,a.shop_open_day,a.cat_id,a.amount7,a.price7,a.indus_amount_diff,previous_amount_7,popular_items_count,
+indus_popular_items_count
+from st_wish_shop_surge1_fatdt7 a
+inner join (select merchant_id from st_wish_new_shop_hot_fatdt7 where pt=${pt} group by merchant_id) b on (a.merchant_id=b.merchant_id and a.pt=${pt});

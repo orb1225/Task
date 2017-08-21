@@ -1,0 +1,7 @@
+alter table st_wish_indus_surge_save_item_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_indus_surge_save_item_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.cat_id,a.merchant_id,a.itemid,a.wish_price,a.already_recommended_flag,
+a.amount,a.price,a.wish_save,a.rate_num
+from st_wish_indus_top_item_fatdt0 a
+inner join st_wish_indus_top_item_fatdt7 b on(a.cat_id=b.cat_id and a.itemid=b.itemid and a.pt=${pt} and b.pt=${pt,day:-1})
+where a.wish_save>(b.wish_save/7)*5;

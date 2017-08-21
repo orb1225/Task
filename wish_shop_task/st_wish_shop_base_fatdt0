@@ -1,0 +1,58 @@
+alter table st_wish_shop_base_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_base_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.merchant_id,a.merchant_logo,a.merchant_nick,a.merchant_name,
+a.cat_ids,a.shop_total,a.shop_offer,a.shop_stock,a.shop_fbw,a.shop_rate,a.shop_save,a.shop_score,
+coalesce(b.amount,0) amount_1,coalesce(b.price,0) price_1,coalesce(b.wish_save,0) wish_save_1,coalesce(b.rate_num,0) rate_num_1,
+coalesce(c.amount,0) amount_7,coalesce(c.price,0) price_7,coalesce(c.wish_save,0) wish_save_7,coalesce(c.rate_num,0) rate_num_7,
+coalesce(b.item_count,0),coalesce(b.hot_item_count,0),coalesce(b.wish_recommended_count,0),coalesce(b.item_cat_count,0),coalesce(b.avg_price,0),
+coalesce(b.hot_avg_price,0),coalesce(b.new_item_count,0),coalesce(b.amount_rank,0),coalesce(b.price_rank,0),coalesce(d.amount,0) amount_30,
+coalesce(d.price,0) price_30,null as shop_open_day,coalesce(b.hwc_count,0),coalesce(d.wish_save,0) wish_save_30,coalesce(d.rate_num,0) rate_num_30,f.removed_count,f.deleted_count,
+b.del_wish_recommended_count,b.rem_wish_recommended_count,b.del_item_cat_count,b.rem_item_cat_count,b.sale_avg_price,b.sale_hot_avg_price,0 as popular_items_count
+from dw_wish_shop_dimt0 a
+left join (
+            select *,
+            Row_Number() OVER (partition by 1 ORDER BY amount desc) amount_rank,
+            Row_Number() OVER (partition by 1 ORDER BY price desc) price_rank
+            from st_wish_shop_offer_fatdt0 where  pt=${pt}
+          ) b on(a.merchant_id=b.merchant_id)
+left join st_wish_shop_offer_fatdt7 c on(a.merchant_id=c.merchant_id and c.pt=${pt})
+left join st_wish_shop_offer_fatdt30 d on(a.merchant_id=d.merchant_id and d.pt=${pt})
+left join st_wish_shop_offer_fatdt0 e on(a.merchant_id=e.merchant_id and e.pt=${pt})
+left join dw_wish_shop_tmp_fatdt0 f on (a.merchant_id=f.merchant_id and f.pt=${pt})
+where a.pt=${pt,day:1};
+
+insert overwrite table st_wish_shop_base_fatdt0 partition(pt=${pt})
+select insert_date,merchant_id,merchant_logo,merchant_nick,merchant_name,cat_ids,shop_total,shop_offer,shop_stock,shop_fbw,shop_rate,shop_save,shop_score,amount_1,price_1,wish_save_1,rate_num_1,amount_7,price_7,wish_save_7,rate_num_7,item_count,hot_item_count,wish_recommended_count,item_cat_count,avg_price,hot_avg_price,new_item_count,amount_rank,price_rank,amount_30,price_30,shop_open_day,hwc_count,wish_save_30,rate_num_30,removed_count,deleted_count,del_wish_recommended_count,rem_wish_recommended_count,del_item_cat_count,rem_item_cat_count,sale_avg_price,sale_hot_avg_price
+,0 as popular_items_count
+from st_wish_shop_base_fatdt0 where pt=${pt} and amount_rank!=0
+union all
+select insert_date,merchant_id,merchant_logo,merchant_nick,merchant_name,cat_ids,shop_total,shop_offer,shop_stock,shop_fbw,shop_rate,shop_save,shop_score,amount_1,price_1,wish_save_1,rate_num_1,amount_7,price_7,wish_save_7,rate_num_7,item_count,hot_item_count,wish_recommended_count,item_cat_count,avg_price,hot_avg_price,new_item_count,
+amount_rank+b.cnt as amount_rank,
+price_rank+b.cnt as price_rank,
+amount_30,price_30,shop_open_day,hwc_count,wish_save_30,rate_num_30,removed_count,deleted_count,del_wish_recommended_count,rem_wish_recommended_count,del_item_cat_count,rem_item_cat_count,sale_avg_price,sale_hot_avg_price,0 as popular_items_count
+from
+(
+select
+insert_date,merchant_id,merchant_logo,merchant_nick,merchant_name,cat_ids,shop_total,shop_offer,shop_stock,shop_fbw,shop_rate,shop_save,shop_score,amount_1,price_1,wish_save_1,rate_num_1,amount_7,price_7,wish_save_7,rate_num_7,item_count,hot_item_count,wish_recommended_count,item_cat_count,avg_price,hot_avg_price,new_item_count,
+Row_Number() OVER (partition by 1 ORDER BY amount_rank desc) amount_rank,
+Row_Number() OVER (partition by 1 ORDER BY price_rank desc) price_rank,
+amount_30,price_30,pt,shop_open_day,hwc_count,wish_save_30,rate_num_30,removed_count,deleted_count,del_wish_recommended_count,rem_wish_recommended_count,del_item_cat_count,rem_item_cat_count,sale_avg_price,sale_hot_avg_price
+from st_wish_shop_base_fatdt0 where  pt=${pt} and amount_rank=0
+) a
+inner join
+(select count(*) cnt,pt from st_wish_shop_base_fatdt0 where pt=${pt} and amount_rank!=0 group by pt) b
+on (a.pt=b.pt);
+
+insert overwrite table st_wish_shop_base_fatdt0 partition(pt=${pt})
+select
+a.insert_date,a.merchant_id,a.merchant_logo,a.merchant_nick,a.merchant_name,a.cat_ids,a.shop_total,a.shop_offer,a.shop_stock,a.shop_fbw,a.shop_rate,a.shop_save,a.shop_score,a.amount_1,a.price_1,a.wish_save_1,a.rate_num_1,a.amount_7,a.price_7,a.wish_save_7,a.rate_num_7,a.item_count,a.hot_item_count,a.wish_recommended_count,a.item_cat_count,a.avg_price,a.hot_avg_price,a.new_item_count,a.amount_rank,a.price_rank,a.amount_30,a.price_30,coalesce(b.shop_open_day,a.shop_open_day),a.hwc_count,a.wish_save_30,a.rate_num_30,a.removed_count,a.deleted_count,a.del_wish_recommended_count,a.rem_wish_recommended_count,a.del_item_cat_count,a.rem_item_cat_count,a.sale_avg_price,a.sale_hot_avg_price
+,coalesce(e.popular_items_count,0) as popular_items_count
+from (select * from st_wish_shop_base_fatdt0 where pt=${pt}) a
+left outer join
+(select substr(min(gen_time),1,10) as shop_open_day,merchant_id from dw_wish_item_dimt0 where pt=${pt,day:1} group by merchant_id) b
+on (a.merchant_id=b.merchant_id)
+left join
+(
+     select merchant_id,popular_items_count from st_wish_indus_shop_popularitems_fatdt0  where pt=${pt} group by merchant_id,popular_items_count
+)e
+on  (a.merchant_id=e.merchant_id);

@@ -1,0 +1,16 @@
+alter table st_shopee_item_base_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_base_fatdt7 partition(pt=${pt})
+select  "${dt}" as insert_date,a.itemid,a.shopid,a.cat,like_count_7,
+rate_count_7,coalesce(amount_7,0) as amount_7,stock_7,
+coalesce(amount_price_7,0) as  amount_price_7
+from
+(select "${dt}" as insert_date,itemid,shopid,max(cat) cat,sum(coalesce(liked_count_1,0)) as like_count_7,
+sum(coalesce(rate_count_1,0)) as rate_count_7,sum(coalesce(stock_1,0)) as stock_7
+from st_shopee_item_like_rate_fatdt0
+where pt<=${pt} and pt>=${pt,day:-6}
+group by itemid,shopid)a
+left join
+(select itemid,shopid,amount_7,amount_price_7
+from st_shopee_item_offer_fatdt7
+where pt=${pt}) b
+on a.itemid=b.itemid ;

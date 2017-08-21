@@ -1,11 +1,11 @@
 #coding=utf-8
-from parse_table import parse_table
+from ParseTable import Parse_Table
 from Task  import *
-from Task_read import table_Task
+from Task_Read import Task_Read
 class All_table_task(object):
     def all_table_task(self,roodir):
-        Table_task=table_Task()
-        Parse_table=parse_table()
+        Table_task=Task_Read()
+        Parse_table=Parse_Table()
         #获得指定文件夹下所有任务
         task_name_list=Table_task.get_taskname(roodir)
         all_task=[]#定义all_task用来存task对象
@@ -39,7 +39,14 @@ class All_table_task(object):
         return task_relation_list,table_relation_list
 
 
-#a=All_table_task()
-#print a.all_table_task("File")
-
+a=All_table_task()
+s=a.all_table_task("File")
+#import csv
+#with open("zz.csv","w") as f:
+#    for line in s[1]:
+#        f.write(",".join(line)+"\n")
+#
+#
+#print s[1]
+#
 

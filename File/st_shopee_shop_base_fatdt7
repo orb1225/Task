@@ -1,0 +1,17 @@
+alter table st_shopee_shop_base_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_base_fatdt7 partition(pt=${pt})
+select "${dt}" as insert_date,a.shopid,like_count_7,rate_count_7,amount_7,amount_price_7,new_item_count_7
+from
+(select shopid,sum(like_count_7) like_count_7,sum(rate_count_7) rate_count_7,sum(amount_7) amount_7,sum(amount_price_7) amount_price_7
+from
+st_shopee_item_base_fatdt7
+where pt=${pt}
+group by shopid)a
+left join
+(
+select shopid,sum(new_item_count) as new_item_count_7
+from st_shopee_shop_on_shelf_fatdt0
+where pt=${pt,day:1}  and on_shelf_time>="${dt,day:-6}"
+group by shopid
+)b
+on a.shopid=b.shopid;

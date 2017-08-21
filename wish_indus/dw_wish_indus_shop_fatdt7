@@ -1,0 +1,7 @@
+alter table dw_wish_indus_shop_fatdt7 drop partition(pt=${pt});
+insert overwrite table dw_wish_indus_shop_fatdt7 partition(pt=${pt})
+select "${dt}" insert_date,cat_id,merchant_id,sum(wish_price)/count(*),
+sum(already_recommended_flag),sum(amount),sum(price),sum(wish_save),sum(rate_num)
+from dw_wish_indus_item_fatdt7
+where pt=${pt}
+group by cat_id,merchant_id;

@@ -1,0 +1,12 @@
+alter table st_wish_hwc_indus_total_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_hwc_indus_total_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.cat_id,coalesce(b.item_count,0),coalesce(b.hot_item_count,0),coalesce(b.amount,0),coalesce(b.price,0),a.amount_7,a.price_7,a.wish_save_7
+from
+(    select sum(wish_save) as wish_save_7,cat_id,sum(amount) as amount_7,sum(price) as price_7 from dw_wish_indus_item_fatdt0
+     where pt>=${pt,day:-6} and pt<=${pt} and is_hwc="True" group by  cat_id
+) a
+left outer join
+(    select cat_id,count(itemid) as item_count,sum(case when amount>0 then 1 else 0 end) as hot_item_count,sum(amount) as amount,sum(price) as price
+     from dw_wish_indus_item_fatdt0 where pt=${pt} and is_hwc="True" group by cat_id
+)  b
+on (a.cat_id=b.cat_id);

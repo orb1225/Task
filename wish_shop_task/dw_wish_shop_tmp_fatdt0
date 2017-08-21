@@ -1,0 +1,24 @@
+alter table dw_wish_shop_tmp_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_shop_tmp_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.merchant_id,coalesce(b.amount,0),coalesce(b.price,0),coalesce(b.wish_save,0),coalesce(b.rate_num,0),
+a.item_count,coalesce(b.hot_item_count),a.wish_recommended_count,a.item_cat_count,a.avg_price,b.hot_avg_price,a.wish_num,a.hwc_count,
+a.del_wish_recommended_count,a.rem_wish_recommended_count,a.del_item_cat_count,a.rem_item_cat_count,a.sale_avg_price,
+coalesce(b.sale_hot_avg_price,0) sale_hot_avg_price,a.removed_count,a.deleted_count
+from
+(
+    select merchant_id,count(*) as item_count,count(if(already_recommended_flag=1,1,NULL)) wish_recommended_count,count(if(length(cat_ids)>0,1,NULL)) item_cat_count,
+         sum(seller_price+seller_freight_price)/count(*) avg_price,sum(wish_num) wish_num,count(if(is_hwc="True",1,NULL)) hwc_count,
+         count(if(already_recommended_flag=1 and deleted_flag=1,1,NULL)) del_wish_recommended_count,count(if(already_recommended_flag=1 and removed_flag=1,1,NULL)) rem_wish_recommended_count,
+         count(if(length(cat_ids)>0 and deleted_flag=1,1,NULL)) del_item_cat_count,count(if(length(cat_ids)>0 and removed_flag=1,1,NULL)) rem_item_cat_count,
+         sum(if(removed_flag=0 and deleted_flag=0,seller_price+seller_freight_price,0))/sum(if(removed_flag=0 and deleted_flag=0,1,0)) sale_avg_price,
+         sum(if(removed_flag=1,1,0)) as removed_count,sum(if(deleted_flag=1,1,0)) as deleted_count
+    from dw_wish_item_dimt0 where pt=${pt,day:1} group by merchant_id
+) a
+left outer join
+(   select merchant_id,sum(amount_1) as amount ,sum(price_1) price ,sum(wish_save_1) wish_save,sum(rate_num_1) rate_num,count(if(amount_1>0,1,NULL)) hot_item_count,
+         coalesce(sum(if(amount_1>0,seller_price+seller_freight_price,0))/count(if(amount_1>0,1,NULL)),0) hot_avg_price,
+         coalesce(sum(if(amount_1>0 and removed_flag=0 and deleted_flag=0,seller_price+seller_freight_price,0))/count(if(amount_1>0 and removed_flag=0 and deleted_flag=0,1,NULL)),0) sale_hot_avg_price
+
+    from st_wish_item_base_fatdt0 where pt=${pt} group by merchant_id
+)b
+on (a.merchant_id=b.merchant_id)

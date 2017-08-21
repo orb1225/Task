@@ -1,0 +1,9 @@
+alter table ods_wish_shop drop partition(pt=${pt});
+insert overwrite table ods_wish_shop partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,main_pic,display_name,merchant_name,num,rating_num,avg_rating
+from
+   (
+   select *,Row_Number() OVER (partition by merchant_id ORDER BY pt asc) sort_order
+   from scrapy.tmp_wish where pt>=${pt} and pt<${pt,day:1} and length(merchant_id)>0 and length(display_name)>0
+   ) c
+   where sort_order=1;

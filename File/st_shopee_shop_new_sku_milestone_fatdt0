@@ -1,0 +1,12 @@
+alter table st_shopee_shop_new_sku_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_shop_new_sku_milestone_fatdt0 partition(pt=${pt})
+select  "${dt}" as insert_date,shopid,count(itemid)
+from
+(select shopid,itemid,count(sku_id)
+from
+st_shopee_sku_new_milestone_fatdt0
+where pt=${pt}
+group by
+shopid,itemid
+)a
+group by shopid;

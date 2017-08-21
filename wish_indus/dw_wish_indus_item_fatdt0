@@ -1,0 +1,32 @@
+alter table dw_wish_indus_item_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_wish_indus_item_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,coalesce(x.cat_id,0),coalesce(x.merchant_id,q.merchant_id),x.itemid,
+coalesce(x.wish_price,0),coalesce(x.already_recommended_flag,0),coalesce(x.amount,0),coalesce(x.price,0),
+coalesce(x.wish_save,0),coalesce(x.rate_num,0),coalesce(x.amount_7,0),coalesce(x.price_7,0),coalesce(x.amount_30,0),coalesce(x.price_30,0),x.is_hwc,
+x.offer,x.removed_flag,x.deleted_flag,x.gen_time
+from dw_wish_shop_dimt0 q
+left join
+        (
+            select a.cat_id,b.merchant_id,b.itemid,b.wish_price,coalesce(c.already_recommended_flag,0) already_recommended_flag,coalesce(c.amount,0) amount,
+                 coalesce(c.price,0) price,coalesce(c.wish_save,0) wish_save,coalesce(c.rate_num,0) rate_num,coalesce(c.amount_7,0) amount_7,coalesce(c.price_7,0) price_7,
+                 coalesce(c.amount_30,0) amount_30,coalesce(c.price_30,0) price_30,b.is_hwc,b.offer,b.removed_flag,b.deleted_flag,b.gen_time,
+                 Row_Number() OVER (partition by a.cat_id,b.merchant_id,b.itemid ORDER BY coalesce(c.amount,0)desc) sort_order
+            from
+            (select * from dw_wish_tmp_cat_dimt0 where pt=${g_wish_cat_pt}) a
+            inner join
+            (
+                 select merchant_id,itemid,if(cat_id="","0",cat_id) cat_id,seller_price+seller_freight_price wish_price,if(is_hwc="",null,is_hwc) is_hwc,offer,
+                 gen_time,
+                 if(removed_flag=1,1,0) as removed_flag,if(deleted_flag=1,1,0) as deleted_flag
+                 from dw_wish_item_dimt0 lateral view explode(split(if(cat_ids is null,"",cat_ids),"\;")) subview AS cat_id
+                 where pt=${pt,day:1} and (seller_price<5000 or offer>0 )
+            ) b on(a.sub_id=b.cat_id)
+            left join
+            (
+                 select merchant_id,itemid,already_recommended_flag,amount_1 amount,price_1 price,wish_save_1 wish_save,
+                 rate_num_1 rate_num,amount_7,price_7,amount_30,price_30
+                 from st_wish_item_deal_fatdt0
+                 where pt=${pt}
+            ) c on (b.itemid=c.itemid)
+        ) x on(q.merchant_id=x.merchant_id)
+where q.pt=${pt} and (x.sort_order=1 or x.sort_order is NULL);

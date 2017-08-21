@@ -1,0 +1,25 @@
+alter table st_wish_shop_surge1_fatdt7 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_surge1_fatdt7 partition(pt=${pt})
+select "${dt}" insert_date,a.merchant_id,a.merchant_logo,a.merchant_nick,a.merchant_name,(a.item_count-a.removed_count-a.deleted_count) as item_count,a.amount_7,a.price_7,a.wish_save_7,a.new_item_count,a.amount_7-b.amount_7,a.shop_open_day,c.cat_id,c.amount,c.price,
+c.indus_amount_diff,b.amount_7 as previous_amount_7,
+coalesce(e.popular_items_count,0) as popular_items_count,coalesce(d.indus_popular_items_count,0) as indus_popular_items_count
+from st_wish_shop_base_fatdt0 a
+inner join st_wish_shop_base_fatdt0 b on (a.merchant_id=b.merchant_id and a.pt=${pt} and b.pt=${pt,day:-7})
+inner join
+(
+    select x.merchant_id,x.cat_id,x.amount,x.price,x.amount-y.amount as indus_amount_diff
+    from dw_wish_indus_shop_fatdt7 x
+    inner join dw_wish_indus_shop_fatdt7 y
+    on (x.merchant_id=y.merchant_id and x.cat_id=y.cat_id and x.pt=${pt} and y.pt=${pt,day:-7})
+) c on (a.merchant_id=c.merchant_id)
+left join
+(
+    select merchant_id,cat_id,indus_popular_items_count from st_wish_indus_shop_popularitems_fatdt0 where pt=${pt}
+)d
+on (c.merchant_id=d.merchant_id and c.cat_id=d.cat_id)
+left join
+(
+     select merchant_id,popular_items_count from st_wish_indus_shop_popularitems_fatdt0  where pt=${pt} group by merchant_id,popular_items_count
+)e
+on  (a.merchant_id=e.merchant_id)
+where a.amount_7-b.amount_7>0 or a.wish_save_7-b.wish_save_7>0 or c.indus_amount_diff>0;

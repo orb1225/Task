@@ -1,0 +1,4 @@
+alter table st_wish_shop_new_item_count_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_new_item_count_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,substring(gen_time,1,7) as gen_month,count(*) as item_count
+from dw_wish_item_dimt0 where pt=${pt,day:1} and gen_time>="${dt,day:-500}" group by merchant_id,substring(gen_time,1,7);

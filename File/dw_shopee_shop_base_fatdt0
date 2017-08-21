@@ -1,0 +1,11 @@
+alter table dw_shopee_shop_base_fatdt0 drop partition(pt=${pt});
+insert overwrite table dw_shopee_shop_base_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,shopid,follower_count,rating_percentage,name,link,description,item_count,shopee_verified,
+from_unixtime(ctime) as create_time,category_list,following_count,is_seller,from_unixtime(last_active_time),response_rate,
+had_order,rating_count,webchat_response_rate,rating_star,preparation_time,official_shop,portrait,status
+from
+   (
+   select *,Row_Number() OVER (partition by shopid ORDER BY pt asc) sort_order
+   from scrapy.tmp_shopeeshop  where pt>=${pt} and pt<${pt,day:1}
+   ) c
+where sort_order=1;

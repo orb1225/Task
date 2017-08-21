@@ -1,0 +1,17 @@
+alter table st_shopee_sku_delete_milestone_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_sku_delete_milestone_fatdt0 partition(pt=${pt})
+select "${dt}" as insert_date,a.shopid,a.itemid,a.sku_id,a.sku_name,a.sku_type
+from
+(select shopid,itemid,sku_id,sku_name,sku_type
+from
+dw_shopee_item_sku_split_incre
+where pt=${pt} )a
+left join
+(
+select  shopid,itemid,sku_id,sku_name,sku_type
+from
+dw_shopee_item_sku_split_incre
+where pt=${pt,day:1}
+)b
+on a.sku_id=b.sku_id and a.itemid=b.itemid
+where b.sku_id is null and b.itemid is not null;

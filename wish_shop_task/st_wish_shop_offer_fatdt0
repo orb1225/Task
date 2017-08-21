@@ -1,0 +1,46 @@
+alter table st_wish_shop_offer_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_offer_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,a.merchant_id,a.amount,a.price,a.wish_save,a.rate_num,a.item_count,
+a.hot_item_count,a.wish_recommended_count,a.item_cat_count,a.avg_price,a.hot_avg_price,
+coalesce(d.cnt,0) new_item_count,coalesce(e.cnt,0) change_price_count,coalesce(g.cnt,0) change_tag_count,
+coalesce(b.cnt,0) change_audit_count,coalesce(f.cnt,0) change_refer_count,coalesce(c.cnt,0) change_cat_count,
+coalesce(h.cnt,0) change_price1_count,coalesce(i.cnt,0) change_tag1_count,coalesce(j.cnt,0) change_msrp_count,
+coalesce(k.cnt,0) removed_count,coalesce(l.cnt,0) deleted_count,coalesce(m.cnt,0) save_count,
+coalesce(n.cnt,0) amount_count,coalesce(o.cnt,0) good_rate_count,coalesce(p.cnt,0) bad_rate_count,
+coalesce(q.cnt,0) change_audit_0t1_count,coalesce(r.cnt,0) change_audit_1t0_count,
+coalesce(s.cnt,0) change_refer_0t1_count,coalesce(t.cnt,0) change_refer_1t0_count,
+wish_num,a.hwc_count,coalesce(v.cnt,0) change_hwc_count,coalesce(w.cnt,0) change_image_count,coalesce(x.cnt,0) change_nhwc_count,
+coalesce(y.add_sku_item_cnt,0),coalesce(y.del_sku_item_cnt,0),coalesce(y.trace_sku_item_cnt,0),
+a.del_wish_recommended_count,a.rem_wish_recommended_count,a.del_item_cat_count,a.rem_item_cat_count,a.sale_avg_price,a.sale_hot_avg_price
+from dw_wish_shop_tmp_fatdt0 a
+left join (select merchant_id,count(*) cnt from st_wish_trace_audit_item_fatdt0 where pt=${pt} group by merchant_id) b on(a.merchant_id=b.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_cats_item_fatdt0 where pt=${pt} group by merchant_id) c on(a.merchant_id=c.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_new_item_fatdt0 where pt=${pt} group by merchant_id) d on(a.merchant_id=d.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_price_item_fatdt0 where pt=${pt} and (old_wish_price<>new_wish_price or old_wish_freight_price<>new_wish_freight_price) group by merchant_id) e on(a.merchant_id=e.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_refer_item_fatdt0 where pt=${pt} group by merchant_id) f on(a.merchant_id=f.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_tag_item_fatdt0 where pt=${pt} and old_wish_tag<>new_wish_tag group by merchant_id) g on(a.merchant_id=g.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_price_item_fatdt0 where pt=${pt} and (old_seller_price<>new_seller_price or old_seller_freight_price<>new_seller_freight_price) group by merchant_id) h on(a.merchant_id=h.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_tag_item_fatdt0 where pt=${pt} and old_custom_tag<>new_custom_tag group by merchant_id) i on(a.merchant_id=i.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_price_item_fatdt0 where pt=${pt} and old_original_price<>new_original_price group by merchant_id) j on(a.merchant_id=j.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_removed_item_fatdt0 where pt=${pt} and new_removed_flag=1 group by merchant_id) k on(a.merchant_id=k.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_deleted_item_fatdt0 where pt=${pt} and new_deleted_flag=1 group by merchant_id) l on(a.merchant_id=l.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_save_item_fatdt0 where pt=${pt} group by merchant_id) m on(a.merchant_id=m.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_amount_item_fatdt0 where pt=${pt} group by merchant_id) n on(a.merchant_id=n.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_rate_item_fatdt0 where pt=${pt} and rate_type=1 group by merchant_id) o on(a.merchant_id=o.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_rate_item_fatdt0 where pt=${pt} and rate_type=2 group by merchant_id) p on(a.merchant_id=p.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_audit_item_fatdt0 where pt=${pt} and old_audit_flag=0 group by merchant_id) q on(a.merchant_id=q.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_audit_item_fatdt0 where pt=${pt} and old_audit_flag=1 group by merchant_id) r on(a.merchant_id=r.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_refer_item_fatdt0 where pt=${pt} and old_recommended_flag=0 group by merchant_id) s on(a.merchant_id=s.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_refer_item_fatdt0 where pt=${pt} and old_recommended_flag=1 group by merchant_id) t on(a.merchant_id=t.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_hwc_item_fatdt0 where pt=${pt} and new_hwc="True" group by merchant_id) v on (a.merchant_id=v.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_image_item_fatdt0 where pt=${pt} group by merchant_id) w on (a.merchant_id=w.merchant_id)
+left join (select merchant_id,count(*) cnt from st_wish_trace_hwc_item_fatdt0 where pt=${pt} and new_hwc!="True" group by merchant_id) x on (a.merchant_id=x.merchant_id)
+left join (
+             select merchant_id,sum(if(add_sku_num>0,1,0)) as add_sku_item_cnt,sum(if(del_sku_num>0,1,0)) as del_sku_item_cnt,sum(if(trace_sku_num>0,1,0)) as trace_sku_item_cnt from
+             (  select merchant_id,itemid,sum(if(old_original_price is null and new_original_price is not null,1,0)) as add_sku_num,
+                    sum(if(new_original_price is null and old_original_price is not null,1,0)) as del_sku_num,
+                    sum(if(new_original_price is not null and old_original_price is not null,1,0)) as trace_sku_num
+                from st_wish_trace_price_item_sku_fatdt0 where pt=${pt} group by merchant_id,itemid
+             ) a group by merchant_id
+          ) y on (a.merchant_id=y.merchant_id)
+where a.pt=${pt};

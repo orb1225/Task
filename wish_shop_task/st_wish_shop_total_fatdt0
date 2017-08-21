@@ -1,0 +1,9 @@
+alter table st_wish_shop_total_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_wish_shop_total_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,sum(offer),sum(offer*wish_price),sum(wish_num),sum(rate_num),
+count(*) item_count,count(if(offer>0,1,NULL)) hot_item_count,count(if(already_recommended_flag=1,1,NULL)) wish_recommended_count,
+sum(seller_price+seller_freight_price)/count(*) avg_price,
+coalesce(sum(if(offer>0,seller_price+seller_freight_price,0))/count(if(offer>0,1,NULL)),0) hot_avg_price
+from st_wish_item_base_fatdt0
+where pt=${pt}
+group by merchant_id;

@@ -1,0 +1,7 @@
+alter table st_shopee_item_deal_fatdt0 drop partition(pt=${pt});
+insert overwrite table st_shopee_item_deal_fatdt0 partition(pt=${pt})
+select "${dt}" insert_date,itemid,shopid,cat,original_price_1,price_1,amount_1,amount_price,add_rate,
+like_count_1,rate_count_1,amount_7,like_count_7,rate_count_7,amount_30,like_count_30,rate_count_30,sold
+from
+st_shopee_item_base_fatdt0
+where pt=${pt};
