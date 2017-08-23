@@ -6,9 +6,10 @@ class Parse_Table(object):
     def extract_table_name(self,script):
         text=script
         #找出from后面第一个符合条件的值，也就是表名
-        input_table_set=set(re.findall("from\s+([\w|\.|\,]+)?",text))
+        #input_table_set=set(re.findall("from\s+([\w|\.|\,]+)?",text))
+        input_table_set=set(re.findall("(?<=from|join)\s+([\w\.\,]+)?",text))
         #找出insert overwrite table后面的表名
-        output_table_set=set(re.findall("insert\s+overwrite\s+table\s+([\w|\.|\,]+)?",text))
+        output_table_set=set(re.findall("insert\s+overwrite\s+table\s+([\w\.\,]+)?",text))
         #去除set中的空值
         input_table_set.discard("")
         output_table_set.discard("")
@@ -67,39 +68,21 @@ class Parse_Table(object):
 #测试的，没什么用
 
 a=Parse_Table()
-b="""from
-(select *
-from
-dw_shopee_item_dimt0  where pt=${pt}) a
-inner join
-(select * from dw_shopee_item_dimt0  where pt=${pt,day:1}) b
-on(a.itemid=b.itemid)
-insert overwrite table st_shopee_item_shopee_verified_milestone_fatdt0 partition(pt=${pt})
-select "${dt}" insert_date,a.shopid,a.itemid,
-if(a.shopee_verified=0 and b.shopee_verified=1,1,0) as shopee_verified_add,
-if(a.shopee_verified=1 and b.shopee_verified=0,1,0) as shopee_verified_cancel
-where a.shopee_verified<>b.shopee_verified
-insert overwrite table st_shopee_item_status_milestone_fatdt0 partition(pt=${pt})
-select "${dt}" insert_date,a.shopid,a.itemid,
-if(a.status="" and b.status="0",1,0) as item_forbbiden,
-if(a.status="" and b.status="1",1,0) as item_deleted
-where a.status<>b.status and a.status=""
-insert overwrite table st_shopee_item_stock_milestone_fatdt0 partition(pt=${pt})
-select "${dt}" insert_date,a.shopid,a.itemid,
-a.stock  as old_stock,
-b.stock  as new_stock
-where a.stock<>b.stock
-insert overwrite table st_shopee_item_tag_milestone_fatdt0 partition(pt=${pt})
-select "${dt}" insert_date,a.shopid,a.itemid,
-a.hashtag_list ,
-b.hashtag_list
-where a.hashtag_list<>b.hashtag_list and a.status="" and b.status=""
-insert overwrite table st_shopee_item_like_milestone_fatdt0 partition(pt=${pt})
-select "${dt}" insert_date,a.shopid,a.itemid,b.liked_count
-where a.liked_count=0 and b.liked_count>0
-insert overwrite table st_shopee_item_sold_month_milestone_fatdt0 partition(pt=${pt})
-select "${dt}" insert_date,a.shopid,a.itemid,b.sold
-where a.sold=0 and b.sold>0;"""
+b="""alter table st_wish_shop_cat_fatdt30 drop partition(pt=${pt});
+insert overwrite table st_wish_sho|p_cat_fatdt30 partition(pt=${pt})
+select "${dt}" insert_date,merchant_id,acat_id,sum(amount_30),sum(price_30),sum(wish_save_30),sum(rate_num_30),
+count(*) item_count,count(if(amount_30>0,1,NULL)) hot_item_count,count(if(already_recommended_flag=1,1,NULL)) wish_recommended_count,
+sum(seller_price+seller_freight_price)/count(*) avg_price,
+coalesce(sum(if(amount_30>0,seller_price+seller_freight_price,0))/count(if(amount_30>0,1,NULL)),0) hot_avg_price
+from (
+select a.cat_id acat_id,b.*,Row_Number() OVER (partition by a.cat_id,b.merchant_id,b.itemid ORDER BY b.amount_1 desc) sort_order
+from (select * from dw_wish_tmp_cat_dimt0 where pt=${g_wish_cat_pt}) a
+inner join (select *
+            from st_wish_item_base_fatdt0 lateral view explode(split(cat_ids,"\;")) subview AS cat_id
+            where pt=${pt} and removed_flag=0 and deleted_flag=0) b on(a.sub_id=b.cat_id)
+) x
+where sort_order=1
+group by merchant_id,acat_id;"""
 s=a.extract_table_name(b)
 #print s[0],s[1]
 d=a.create_relation_list(s[0],s[1],"st_shopee_item_milestone_fatdt0")
